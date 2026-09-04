@@ -69,6 +69,17 @@ memory as a single string will still lint fine line by line.
 | `daemon-spawns-shell`| warning  | a known daemon directly spawned a shell              |
 | `deep-repeat`        | warning  | 6+ processes in a row share the same name            |
 
+## Testing
+
+```
+$ python -m unittest discover
+```
+
+`tests/test_parser.py` covers indentation handling, parent linkage, and
+the malformed-input cases the parser rejects. `tests/test_rules.py`
+covers each rule in isolation, building `ProcessNode` chains directly
+rather than going through the parser.
+
 ## Status
 
 Early. The rule set is small and the daemon/shell name lists in
