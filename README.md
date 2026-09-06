@@ -47,9 +47,32 @@ Or lint from stdin, e.g. piping in a live snapshot:
 $ ps -eo pid,ppid,comm | some-script-that-formats-as-tree | proctree-lint
 ```
 
+Pass `--format json` to get findings as a JSON array instead, for
+feeding into another tool:
+
+```
+$ proctree-lint --format json example.tree
+[
+  {
+    "line": 9,
+    "code": "deep-repeat",
+    "severity": "warning",
+    "message": "sh repeats 4 times in a row up to pid 343"
+  },
+  {
+    "line": 10,
+    "code": "dup-pid",
+    "severity": "error",
+    "message": "pid 343 already seen on line 9"
+  }
+]
+```
+
 Exit status is `0` with no findings, `1` if any findings were reported,
 `2` on a malformed input file (the parser gives up rather than guessing
-at a broken tree).
+at a broken tree). With `--format json`, a malformed file reports
+`{"error": ..., "line": ...}` on stderr instead of the plain-text
+message.
 
 ## Streaming
 
@@ -78,7 +101,8 @@ $ python -m unittest discover
 `tests/test_parser.py` covers indentation handling, parent linkage, and
 the malformed-input cases the parser rejects. `tests/test_rules.py`
 covers each rule in isolation, building `ProcessNode` chains directly
-rather than going through the parser.
+rather than going through the parser. `tests/test_cli.py` covers the
+text and JSON output modes and exit codes, feeding stdin through `main`.
 
 ## Status
 

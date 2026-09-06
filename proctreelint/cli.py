@@ -7,6 +7,7 @@ that guarantee actually lives.
 """
 
 import argparse
+import json
 import sys
 from typing import Iterable
 
@@ -23,6 +24,24 @@ def lint(lines: Iterable[str]) -> list[Finding]:
     return findings
 
 
+def _print_text(findings: list[Finding]) -> None:
+    for finding in findings:
+        print(str(finding))
+
+
+def _print_json(findings: list[Finding]) -> None:
+    payload = [
+        {
+            "line": finding.line_no,
+            "code": finding.code,
+            "severity": finding.severity,
+            "message": finding.message,
+        }
+        for finding in findings
+    ]
+    print(json.dumps(payload, indent=2))
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="proctree-lint",
@@ -33,6 +52,12 @@ def main(argv: list[str] | None = None) -> int:
         nargs="?",
         help="path to a process tree file; reads from stdin if omitted",
     )
+    parser.add_argument(
+        "--format",
+        choices=("text", "json"),
+        default="text",
+        help="output format (default: text)",
+    )
     args = parser.parse_args(argv)
 
     try:
@@ -42,11 +67,18 @@ def main(argv: list[str] | None = None) -> int:
         else:
             findings = lint(sys.stdin)
     except ParseError as exc:
-        print(f"{args.path or '<stdin>'}: {exc}", file=sys.stderr)
+        if args.format == "json":
+            print(json.dumps({"error": exc.message, "line": exc.line_no}), file=sys.stderr)
+        else:
+            print(f"{args.path or '<stdin>'}: {exc}", file=sys.stderr)
         return 2
 
-    for finding in sorted(findings, key=lambda f: f.line_no):
-        print(str(finding))
+    findings.sort(key=lambda f: f.line_no)
+
+    if args.format == "json":
+        _print_json(findings)
+    else:
+        _print_text(findings)
 
     return 1 if findings else 0
 
