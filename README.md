@@ -68,6 +68,26 @@ $ proctree-lint --format json example.tree
 ]
 ```
 
+Pass `--config` with a path to a JSON file to extend the built-in
+daemon/shell name lists without editing the source. The file is
+additive -- entries here are added to `SHELL_NAMES`/`DAEMON_NAMES` in
+`rules.py`, not a replacement for them:
+
+```json
+{
+  "shell_names": ["fish", "ksh"],
+  "daemon_names": ["redis-server", "mongod"]
+}
+```
+
+```
+$ proctree-lint --config myconfig.json example.tree
+```
+
+Either key may be omitted. A missing file, invalid JSON, an unknown
+key, or a non-string list entry all exit `2` with an explanation on
+stderr.
+
 Exit status is `0` with no findings, `1` if any findings were reported,
 `2` on a malformed input file (the parser gives up rather than guessing
 at a broken tree). With `--format json`, a malformed file reports
@@ -103,11 +123,14 @@ the malformed-input cases the parser rejects. `tests/test_rules.py`
 covers each rule in isolation, building `ProcessNode` chains directly
 rather than going through the parser. `tests/test_cli.py` covers the
 text and JSON output modes and exit codes, feeding stdin through `main`.
+`tests/test_config.py` covers config file loading and validation.
 
 ## Status
 
 Early. The rule set is small and the daemon/shell name lists in
-`rules.py` are illustrative, not exhaustive.
+`rules.py` are illustrative, not exhaustive -- `--config` lets you add
+to them without a code change, but there's no way yet to point at a
+project-local config file automatically.
 
 ## License
 

@@ -71,9 +71,13 @@ class DaemonSpawnsShellRule:
 
     code = "daemon-spawns-shell"
 
+    def __init__(self, shell_names: set = SHELL_NAMES, daemon_names: set = DAEMON_NAMES) -> None:
+        self.shell_names = shell_names
+        self.daemon_names = daemon_names
+
     def on_node(self, node: ProcessNode) -> Iterator[Finding]:
         parent = node.parent
-        if parent is not None and node.name in SHELL_NAMES and parent.name in DAEMON_NAMES:
+        if parent is not None and node.name in self.shell_names and parent.name in self.daemon_names:
             yield Finding(
                 node.line_no,
                 self.code,
@@ -112,10 +116,10 @@ class DeepRepeatChainRule:
             )
 
 
-def default_rules() -> list:
+def default_rules(extra_shell_names: set = frozenset(), extra_daemon_names: set = frozenset()) -> list:
     return [
         DuplicatePidRule(),
         EmptyNameRule(),
-        DaemonSpawnsShellRule(),
+        DaemonSpawnsShellRule(SHELL_NAMES | extra_shell_names, DAEMON_NAMES | extra_daemon_names),
         DeepRepeatChainRule(),
     ]

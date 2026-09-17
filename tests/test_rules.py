@@ -86,6 +86,15 @@ class DaemonSpawnsShellRuleTest(unittest.TestCase):
         child = make_node(2, "worker", parent=parent)
         self.assertEqual(list(rule.on_node(child)), [])
 
+    def test_extra_names_are_honored(self):
+        rule = DaemonSpawnsShellRule(shell_names={"fish"}, daemon_names={"redis-server"})
+        parent = make_node(1, "redis-server")
+        child = make_node(2, "fish", parent=parent)
+        findings = list(rule.on_node(child))
+        self.assertEqual(len(findings), 1)
+        self.assertEqual(findings[0].code, "daemon-spawns-shell")
+
+
 
 class DeepRepeatChainRuleTest(unittest.TestCase):
     def test_below_threshold_is_clean(self):
@@ -127,6 +136,20 @@ class DefaultRulesTest(unittest.TestCase):
             {DuplicatePidRule, EmptyNameRule, DaemonSpawnsShellRule, DeepRepeatChainRule},
         )
         self.assertEqual(len(rules), len(rule_types))
+
+    def test_extra_names_extend_rather_than_replace_the_defaults(self):
+        rules = default_rules(extra_shell_names={"fish"}, extra_daemon_names={"redis-server"})
+        daemon_rule = next(r for r in rules if isinstance(r, DaemonSpawnsShellRule))
+
+        # A built-in daemon/shell pair still fires.
+        parent = make_node(1, "nginx")
+        child = make_node(2, "bash", parent=parent)
+        self.assertEqual(len(list(daemon_rule.on_node(child))), 1)
+
+        # So does the pair added via extra_shell_names/extra_daemon_names.
+        parent = make_node(3, "redis-server")
+        child = make_node(4, "fish", parent=parent)
+        self.assertEqual(len(list(daemon_rule.on_node(child))), 1)
 
 
 if __name__ == "__main__":
